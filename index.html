@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test-cesium</title>
+    <style>
+        @import url(./cesium/Widgets/widgets.css);
+    </style>
+    <style>
+        html, body, #cesiumContainer {
+          width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+        .btns {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            display: flex;
+            justify-content: left;
+        }
+        /* .btns button {
+
+        } */
+    </style>
+</head>
+<script src="cesium/Cesium.js"></script>
+<body>
+    <div id="cesiumContainer"></div>
+    <div class="btns">
+        <button id="fly">飞行</button>
+    </div>
+    <script>
+        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJmNzMwN2EyYS02ODhmLTRlNDItODMxYi04NGU2ZDM3Y2E4YmUiLCJpZCI6MjMwMzEsInNjb3BlcyI6WyJhc2wiLCJhc3IiLCJnYyJdLCJpYXQiOjE1ODI3MDM1Nzd9.L5Ftq2FsEMgxL0z7chVebX_rxgaCs_x05wmomixXPVY';
+
+        //bing map
+        var bingMap = new Cesium.ProviderViewModel({
+            name: 'Bing Maps Aerial',
+            iconUrl: './SampleData/bingAerial.png',
+            tooltip: 'Bing Maps aerial imagery',
+            category: 'Cesium ion',
+            creationFunction: function() {
+                return new Cesium.BingMapsImageryProvider({
+                    url: 'https://dev.virtualearth.net',
+                    key: 'AvzM4FgDkpuZwkwP9DPDUwq15NUTJxHNyyUHGSXiA9JwAtAinnlPS31PvwB3hcWh',
+                    mapStyle: Cesium.BingMapsStyle.AERIAL
+                })
+            }
+        });
+
+        //Tianditu
+        var tiandiMap = new Cesium.ProviderViewModel({
+            name: 'Tiditu',
+            iconUrl: './SampleData/fire.png',
+            tooltip: 'Tiditu image',
+            category: 'Cesium ion',
+            creationFunction: function() {
+                return new Cesium.WebMapTileServiceImageryProvider({
+                    //调用影像服务 
+                    url: "http://t1.tianditu.com/img_w/wmts?service=wmts&request=GetTile&version=1.0.0&LAYER=img&tileMatrixSet=w&" +
+                        "TileMatrix={TileMatrix}&TileRow={TileRow}&TileCol={TileCol}&style=default&tk=" + '18a298086cbdaf196323315d160352cc'
+                })
+            }
+        });
+
+        var guge = new Cesium.UrlTemplateImageryProvider({            	
+            url:'http://www.google.cn/maps/vt?lyrs=s@800&x={x}&y={y}&z={z}',  
+            tilingScheme:new Cesium.WebMercatorTilingScheme(),            	
+            minimumLevel:1,            
+            maximumLevel:20        
+        });
+
+        // 谷歌中国影像图
+        var url = "http://mt1.google.cn/vt/lyrs=s&hl=zh-CN&x={x}&y={y}&z={z}&s=Gali"; 
+        var Google = new Cesium.UrlTemplateImageryProvider({url:url})
+
+        var viewer = new Cesium.Viewer('cesiumContainer', {
+            animation: true, //是否创建动画小器件，左下角仪表
+            shouldAnimate: true,
+            baseLayerPicker: false, //是否显示图层选择器
+            geocoder: false, //是否显示geocoder小器件，右上角查询按钮
+            homeButton: false, //是否显示Home按钮
+            infoBox: false, //是否显示信息框
+            fullscreenButton: false, //是否显示全屏按钮
+            sceneModePicker: false, //是否显示3D/2D选择器
+            selectionIndicator: false, //是否显示选取指示器组件
+            timeline: true,//是否显示时间轴
+            navigationHelpButton: false, //是否显示右上角的帮助按钮
+            baseLayerPicker: false,
+            imageryProvider: Google,
+            // imageryProviderViewModels: [bingMap, tiandiMap],
+            // imageryProvider: new Cesium.WebMapTileServiceImageryProvider({
+            //     url: 'http://t1.tianditu.com/img_w/wmts?service=wmts&request=GetTile&version=1.0.0&LAYER=img&tileMatrixSet=w&TileMatrix={TileMatrix}&TileRow={TileRow}&TileCol={TileCol}&style=default&format=tiles&tk=18a298086cbdaf196323315d160352cc',
+            //     layer: 'defaultLayer',
+            //     style: 'style',
+            //     tileMatrixSetID: 'default',
+            //     maximumLevel: 18
+            // }),
+            // terrainProvider : Cesium.createWorldTerrain({
+            //     requestVertexNormals: true
+            // })
+        });
+        var scene = viewer.scene;
+
+
+        // 按钮测试
+        document.getElementById('fly').addEventListener('click', function() {
+            
+            // addModel();
+            viewer.entities.collectionChanged.addEventListener(onChanged);
+            demo5();
+            setTimeout(function() {
+                var entity = viewer.entities.getById('redbox');
+                viewer.entities.remove(entity);
+            }, 5000);
+            
+        });
+
+        function onChanged(collection, added, removed, changed) {
+            console.log('collection', collection);
+            console.log('added', added);
+            console.log('removed', removed);
+            console.log('changed', changed);
+        }
+
+        // demo5-添加红色立方体
+        function demo5() {
+            let redBox = viewer.entities.add({
+                id: 'redbox',
+                name: 'red box with black outline',
+                position: Cesium.Cartesian3.fromDegrees(120, 30, 300000.0),
+                box: {
+                    dimensions: new Cesium.Cartesian3(400000, 300000, 500000),
+                    material: Cesium.Color.RED.withAlpha(0.5),
+                    outline: true,
+                    outlineColor: Cesium.Color.BLACK
+                }
+            })
+            viewer.zoomTo(viewer.entities);
+        }
+
+        // 飞向城市
+        function flyInACity() {
+            // Sandcastle.declare(flyInACity);
+
+            var camera = scene.camera;
+            camera.flyTo({
+                destination : Cesium.Cartesian3.fromDegrees(-73.98580932617188, 40.74843406689482, 363.34038727246224),
+                complete : function() {
+                    setTimeout(function() {
+                        camera.flyTo({
+                            destination : Cesium.Cartesian3.fromDegrees(-73.98585975679403, 40.75759944127251, 186.50838555841779),
+                            orientation : {
+                                heading : Cesium.Math.toRadians(200.0),
+                                pitch : Cesium.Math.toRadians(-50.0)
+                            },
+                            easingFunction : Cesium.EasingFunction.LINEAR_NONE
+                        });
+                    }, 1000);
+                }
+            });
+        }
+
+        // 加载手工模型
+        function buildDiyModel() {
+            // var heading = Cesium.Math.toRadians(0.0);
+            // var pitch = Cesium.Math.toRadians(30.0);
+            // var roll = Cesium.defaultValue(0.0);
+            // var hpr = new Cesium.HeadingPitchRoll(heading, pitch, roll);
+            // var origin = Cesium.Cartesian3.fromDegrees(114.0440324376146, 22.55380661402764, 0.0);
+            // var modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(origin, hpr);
+
+            var tileset = scene.primitives.add(
+                new Cesium.Cesium3DTileset({
+                    url: 'https://10.68.2.142:9090/suzhou_kd/models/3dtiles/suzhou1218/tileset.json',
+                    // modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(Cesium.Cartesian3.fromDegrees(0, 0))
+                    modelMatrix: modelMatrix
+                })
+            );
+            
+            viewer.zoomTo(tileset);
+        }
+
+        // 加载城市模型
+        let tilesLayer;
+        function buildCityFeatureLayer() {
+            let startTime = new Date();
+            let url = 'http://data.marsgis.cn/3dtiles/jzw-shanghai/tileset.json';
+            if (tilesLayer && tilesLayer.tileslayer) {
+                scene.primitives.remove(tilesLayer.tileslayer);
+            }
+            tilesLayer = {
+                options: {
+                    maximumMemoryUsage: 1600,
+                    skipLevelOfDetail: true,
+                    loadSiblings: true,
+                    immediatelyLoadDesiredLevelOfDetail: true,
+                    url: url
+                },
+                tileslayer: new Cesium.Cesium3DTileset({
+                    maximumMemoryUsage: 1600,
+                    skipLevelOfDetail: true,
+                    loadSiblings: true,
+                    immediatelyLoadDesiredLevelOfDetail: true,
+                    url: url
+                })
+            }
+            console.log('tilesLayer', tilesLayer);
+            let tilesetObj = scene.primitives.add(tilesLayer.tileslayer);
+            tilesetObj.style = new Cesium.Cesium3DTileStyle({
+                    color: {
+                        conditions: [
+                            ["${floor} >= 200", "rgba(45, 0, 75, 0.5)"], 
+                            ["${floor} >= 100", "rgb(170, 162, 204)"], 
+                            ["${floor} >= 50", "rgb(224, 226, 238)"], 
+                            ["${floor} >= 25", "rgb(252, 230, 200)"],
+                            ["${floor} >= 10", "rgb(248, 176, 87)"], 
+                            ["${floor} >= 5", "rgb(198, 106, 11)"], 
+                            ["true", "rgb(127, 59, 8)"]]
+                    }
+            });
+            let heightOffset = 0.0;
+            tilesetObj.readyPromise.then((tileset) => {
+                heightOffset = 1.0;
+                let boundingSphere = tileset.boundingSphere;
+                viewer.camera.viewBoundingSphere(boundingSphere, new Cesium.HeadingPitchRange(0, -2.0, 0));
+                viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+                let cartographic = Cesium.Cartographic.fromCartesian(boundingSphere.center);
+                let surface = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, cartographic.height);
+                let offset = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, heightOffset);
+                let translation = Cesium.Cartesian3.subtract(offset, surface, new Cesium.Cartesian3());
+                tilesetObj.modelMatrix = Cesium.Matrix4.fromTranslation(translation);
+                viewer.camera.setView({
+                    destination:Cesium.Cartesian3.fromDegrees(121.466139,31.257341,2170.8),
+                    orientation: {
+                        heading: Cesium.Math.toRadians(122.2),
+                        pitch: Cesium.Math.toRadians(-31.8),
+                        roll: Cesium.Math.toRadians(0.2),
+                    },
+                })
+            });
+        
+        }
+        
+        // 加载gltf格式的模型
+        function addModel() {
+            // var url = './scenenew.gltf';
+            // var position = Cesium.Cartesian3.fromRadians(-1.9516424279517286, 0.6322397098422969, 1239.0006814631095);
+            // var heading = Cesium.Math.toRadians(-15.0);
+            // var pitch = 0;
+            // var roll = 0;
+            // var hpr = new Cesium.HeadingPitchRoll(heading, pitch, roll);
+            // var orientation = Cesium.Transforms.headingPitchRollQuaternion(position, hpr);
+            // var scale = 10.0;
+
+            // var entity = viewer.entities.add({
+            //     name : url,
+            //     position : position,
+            //     orientation : orientation,
+            //     model : {
+            //         uri : url,
+            //         scale : scale
+            //     }
+            // });
+            // viewer.imageryLayers.addImageryProvider(new Cesium.WebMapTileServiceImageryProvider({   //调用影响中文注记服务
+            //     url: "http://t0.tianditu.com/cia_w/wmts?service=wmts&request=GetTile&version=1.0.0&LAYER=cia&tileMatrixSet=w&TileMatrix={TileMatrix}&TileRow={TileRow}&TileCol={TileCol}&style=default.jpg",
+            //     layer: "tdtAnnoLayer",
+            //     style: "default",
+            //     format: "image/jpeg",
+            //     tileMatrixSetID: "GoogleMapsCompatible",
+            //     show: false
+            // }));
+            //加载gltf格式数据到cesium  
+
+            // var heading = Cesium.defaultValue(1.57);
+            var heading = Cesium.Math.toRadians(90.0);
+            var pitch = Cesium.defaultValue(0.0);
+            var roll = Cesium.defaultValue(0.0);
+            var hpr = new Cesium.HeadingPitchRoll(heading, pitch, roll);
+            var origin = Cesium.Cartesian3.fromDegrees(114.0440324376146, 22.55380661402764, 0.0);
+            var modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(origin, hpr);
+
+            // var modelMatrix = Cesium.Transforms.eastNorthUpToFixedFrame();        //gltf数据加载位置
+            var model = scene.primitives.add(Cesium.Model.fromGltf({  
+                url : './scenenew.gltf',        //如果为bgltf则为.bgltf     
+                modelMatrix : modelMatrix,  
+                scale : 1     //放大倍数
+            }));     
+            viewer.camera.flyTo({  
+                destination : Cesium.Cartesian3.fromDegrees(114.0440324376146, 22.55380661402764, 500.0)     //相机飞入点
+            });
+        }
+
+
+    </script>
+</body>
+</html>
